@@ -1,33 +1,40 @@
-
+/* 
+ *  Name:Sumedha Garg
+ *  Login: SP_19_CPS536_13
+ *  Purpose: HomeWork 2
+ *  **** Add anything else relevant here ****
+ *  Bug report:Counter Getting reset as each process makes a different copy of it
+ */
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/wait.h>
-
+#define range 50000
 
 int i=2;
 
 	
-int func(int n) 
+int create(int n) 
 {
-	int value = 0,cp,status=0,flag;	
+	int value = 0,cp,status=0,flag,odd=0,even=0;	
 	if (n == 0)
 	{ 
 		return 0;
 	}
     	int pid = fork(); 
-    	if (pid == -1) {
+    	if (pid == -1) { // failure to create child
+		fprintf(stderr,"failure to create child\n");
         	exit(0);
     	}
 	
-    	if (pid==0) { 
+    	if (pid==0) { //child process creation
 		
-		srand48(pid);
-		value=rand()% 50000;
-	        printf("myid: %d pid :%d ppid: %d value: %d\n",i++, getpid(), getppid(),value );
+		srand(getpid());
+		value=rand()% range;
+	        fprintf(stderr,"myid: %d pid :%d ppid: %d value: %d\n",i++, getpid(), getppid(),value );
         	n = n-1;
-       	 	func(n);
+       	 	create(n);
 		if(value % 2==0){
 
 			exit(1);
@@ -37,43 +44,43 @@ int func(int n)
 			exit(0);
 		}
 		
+		
 	    }
-	    else {
-		cp=wait(&status);	  
-		printf("myid= %d recieves #odd= %d #even = %d\n",i--,0,0);
-	    } 
+	    else { //Passing the random value of child in parent process
+		i--;
+		while((cp=wait(&status))>0){	
 
- 	   return WEXITSTATUS(status);   
+			if(WIFEXITED(status)) {
+				if(WEXITSTATUS(status))
+					 even+=1;
+				else
+					odd+=1;  
+				fprintf(stderr,"myid= %d recieves #odd= %d #even = %d\n",i--,odd,even);
+			} 
+			else
+				fprintf(stderr, "Abnormal exit of child. \n");
+		}
+	}
+ 	return 0;   
   
 }
 
-int main(int *argc,char * argv[]){
+int main(int argc,char * argv[]){
 
-	int n=0,value,flag=0;
+	int n=0,value;
 	int even=0,odd=0;
+
 	if(argc !=2) {
         	fprintf(stderr,"Usage %s <nprocs>\n ", argv[0]);
         	exit(1);
     	}
 
 	n = atoi(argv[1]); 
-	srand48(getpid());
-	value=rand()% 50000;
-	printf("myid: 1 pid :%d ppid: %d value: %d\n", getpid(), getppid(),value );
+	srand(getpid());
+	value=rand()% range;
+	fprintf(stderr,"myid: 1 pid :%d ppid: %d value: %d\n", getpid(), getppid(),value ); // Displaying the main process
 	n-=1;
-	
-	flag=func(n);
-	if(flag==1){
-
-        		even+=1;
-			
-		}
-		else{
-			odd+=1;
-			
-		}
-	printf("\nodd= %d even= %d\n",odd,even);
-	
+	create(n);
 	
 	return 0;
 }
